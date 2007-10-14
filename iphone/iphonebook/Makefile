@@ -5,7 +5,7 @@ LDFLAGS=-lobjc -framework CoreFoundation -framework Foundation -framework UIKit 
 all: iPhoneBook
 	cp $^ iPhoneBook.app/
 
-iPhoneBook: iPhoneBook.o iPhoneBookApplication.o
+iPhoneBook: iPhoneBook.o iPhoneBookApplication.o sim_phonebook.o
 	$(LD) $(LDFLAGS) -o $@ $^
 
 %.o: %.m
