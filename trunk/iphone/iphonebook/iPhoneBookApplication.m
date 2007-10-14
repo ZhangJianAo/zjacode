@@ -1,4 +1,5 @@
 #import "iPhoneBookApplication.h"
+#import "sim_phonebook.h"
 
 @implementation iPhoneBookApplication
 
@@ -56,12 +57,7 @@
 	rect = [UIHardware fullScreenApplicationContentRect];
 
 	cell = [[UIImageAndTextTableCell alloc] init];
-	[cell setTitle: [NSString stringWithFormat: @"x: %f y: %f", rect.origin.x, rect.origin.y]];
-	[_pbCells addObject: cell];
-	[cell release];
-
-	cell = [[UIImageAndTextTableCell alloc] init];
-	[cell setTitle: [NSString stringWithFormat: @"w:%f h:%f", rect.size.width, rect.size.height]];
+	[cell setTitle: [NSString stringWithFormat: @"ReadAllPB: %d", ReadAllPB()->count]];
 	[_pbCells addObject: cell];
 	[cell release];
 
