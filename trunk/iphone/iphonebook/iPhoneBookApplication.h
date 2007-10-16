@@ -7,4 +7,6 @@
 	NSMutableArray *_pbCells;
 }
 
+- (void) AddRow: (NSString *)title;
+
 @end

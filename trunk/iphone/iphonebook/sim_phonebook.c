@@ -6,6 +6,7 @@
 #include <termios.h>
 #include <errno.h>
 #include <time.h>
+#include "sim_phonebook.h"
 
 #define LOG stdout
 #define SPEED 115200
@@ -14,11 +15,10 @@
 
 #define ever ;;
 #define BUFSIZE (65536+100)
-unsigned char readbuf[BUFSIZE];
+char readbuf[BUFSIZE];
 
 static struct termios term;
 static struct termios gOriginalTTYAttrs;
-int InitConn(int speed);
 
 #ifndef DEBUG_ENABLED
 #define DEBUGLOG(x) 
@@ -45,140 +45,75 @@ void SendStrCmd(int fd, char *buf)
 	SendCmd(fd, buf, strlen(buf));
 }
 
-int ReadResp(int fd)
+int ReadAtResponse(int fd, char *buf, int *buf_size)
 {
 	int len = 0;
-	struct timeval timeout;
-	int nfds = fd + 1;
-	fd_set readfds;
-	int select_ret;
+	int read_size = 0;
 
-	FD_ZERO(&readfds);
-	FD_SET(fd, &readfds);
+	while(read_size < (*buf_size)) {
+		len = read(fd, buf + read_size, (*buf_size) - read_size);
+		read_size += len;
 
-	// Wait a second
-	timeout.tv_sec = 1;
-	timeout.tv_usec = 500000;
-
-	while (select_ret = select(nfds, &readfds, NULL, NULL, &timeout) > 0)
-	{
-		len += read(fd, readbuf + len, BUFSIZE - len);
-		FD_ZERO(&readfds);
-		FD_SET(fd, &readfds);
-		timeout.tv_sec = 0;
-		timeout.tv_usec = 500000;
+		if (NULL != strnstr(buf, "OK", read_size)) {
+			*buf_size = read_size;
+			return 0;
+		} else if (NULL != strnstr(buf, "ERROR", read_size)) {
+			*buf_size = read_size;
+			return 1;
+		}
 	}
 
-	return len;
+	return -1;
 }
 
-int InitConn(int speed)
+int GetAtReturn(int fd)
 {
-	struct termios buf;
-	int rate;
+	int read_size = 0;
+	while(read_size = read(fd, readbuf, sizeof(readbuf))) {
+		if (NULL != strnstr(readbuf, "OK", read_size)) {
+			return 0;
+		} else if (NULL != strnstr(readbuf, "ERROR", read_size)) {
+			return 1;
+		}
+	}
+
+	return -1;
+}
+
+int InitConn()
+{
+	unsigned int handshake = TIOCM_DTR | TIOCM_RTS | TIOCM_CTS | TIOCM_DSR; 
+	int fd = open("/dev/tty.debug", O_RDWR | O_NOCTTY | O_NOCTTY); 
+   
+	ioctl(fd, TIOCEXCL); 
+	fcntl(fd, F_SETFL, 0); 
   
-	int fd = open ("/dev/tty.debug", O_RDWR | O_NOCTTY | O_NONBLOCK);
-	if (fd < 0) {
-		return fd;
-	}
-	/* open() calls from other applications shall fail now */
-	ioctl (fd, TIOCEXCL, (char *) 0);
+	tcgetattr(fd, &term); 
 
-	if (tcgetattr (fd, &buf)) {
-		return (0);
-	}
-	gOriginalTTYAttrs = buf;
-	fcntl(fd, F_SETFL, 0);
+	gOriginalTTYAttrs = term;
 
-	//
-	// Reset to the serial port to raw mode.
-	//
-	buf.c_iflag &= ~(IGNBRK | BRKINT | PARMRK | ISTRIP |
-			 INLCR | IGNCR | ICRNL | IXON);
-	buf.c_oflag &= ~OPOST;
-	buf.c_lflag &= ~(ECHO | ECHONL | ICANON | ISIG | IEXTEN);
-	buf.c_cflag &= ~(CSIZE | PARENB);
-	buf.c_cflag |= CS8;
-	buf.c_cc[VMIN] = 1;
-	buf.c_cc[VTIME] = 10;
-	//
-	// Get the baud rate.
-	//
-	switch (speed) {
-	case 9600:
-	{
-		rate = B9600;
-		break;
-	}
+	term.c_cflag = CS8 | CLOCAL | CREAD; 
+	term.c_iflag = 0; 
+	term.c_oflag = 0; 
+	term.c_lflag = 0; 
+	term.c_cc[VTIME] = 0; 
+	term.c_cc[VMIN] = 0;
 
-	case 19200:
-	{
-		rate = B19200;
-		break;
-	}
-
-	case 38400:
-	{
-		rate = B38400;
-		break;
-	}
-
-	case 57600:
-	{
-		rate = B57600;
-		break;
-	}
-
-	case 115200:
-	{
-		rate = B115200;
-		break;
-	}
-	}
-
-	//
-	// Set the input and output baud rate of the serial port.
-	//
-	cfsetispeed (&buf, rate);
-	cfsetospeed (&buf, rate);
-	//
-	// Set data bits to 8.
-	//
-	buf.c_cflag &= ~CSIZE;
-	buf.c_cflag |= CS8;
-
-	//
-	// Set stop bits to one.
-	//
-	buf.c_cflag &= ~CSTOPB;
-
-	//
-	// Disable parity.
-	//
-	buf.c_cflag &= ~(PARENB | PARODD);
-
-	//
-	// Set the new settings for the serial port.
-	//
-	if (tcsetattr (fd, TCSADRAIN, &buf)) {
-		return -1;
-	}
-	//
-	// Wait until the output buffer is empty.
-	//
-	tcdrain (fd);
-	ioctl(fd, TIOCSDTR);
-	ioctl(fd, TIOCCDTR);
-	unsigned int handshake = TIOCM_DTR | TIOCM_RTS | TIOCM_CTS | TIOCM_DSR;
-	ioctl(fd, TIOCMSET, &handshake);
+	cfsetspeed(&term, B115200); 
+	cfmakeraw(&term); 
+	tcsetattr(fd, TCSANOW, &term); 
   
+	ioctl(fd, TIOCSDTR); 
+	ioctl(fd, TIOCCDTR); 
+	ioctl(fd, TIOCMSET, &handshake); 
+ 
 	return fd;
 }
 
 void CloseConn(int fd)
 {
 	SendStrCmd(fd,"ate1\r");
-	ReadResp(fd);
+	GetAtReturn(fd);
 	tcdrain(fd);
 	tcsetattr(fd, TCSANOW, &gOriginalTTYAttrs);
 	close(fd);
@@ -194,11 +129,8 @@ void AT(int fd)
 	SendAT(fd);
   
 	for (ever) {
-		if(ReadResp(fd) != 0) {
-			if(strstr(readbuf,"OK"))
-			{
+		if(0 == GetAtReturn(fd)) {
 				break;
-			}
 		}
 		SendAT(fd);
 	}
@@ -208,28 +140,83 @@ typedef unsigned char	UCHAR;
 typedef unsigned char	*LPSTR;
 typedef unsigned char	*LPBYTE;
 
-int ReadAllPB()
+sim_phonebook * ReadAllPB()
 {
-	unsigned char buf[1024];
+	char buf[1024];
+	int buf_len, process_len, i;
 	ssize_t read_size;
-	unsigned char cmd[64];
+	char cmd[64];
 	int begin, end;
 	int len;
 
-	int fd = InitConn(115200); 
+	int fd = InitConn(); 
 	AT(fd);  
 	SendStrCmd(fd, "ATE0\r");
-	ReadResp(fd);
+	GetAtReturn(fd);
 	SendStrCmd(fd,"AT+CSCS=\"UCS2\"\r");
-	ReadResp(fd); 
+	GetAtReturn(fd);
 	SendStrCmd(fd,"at+cpbr=?\r");
-	ReadResp(fd);
-	sscanf(readbuf,"\r\n+CPBR: (%d-%d),%*d,%*d", &begin, &end);
-	sprintf(cmd,"at+cpbr=1,%d\r",end);
-	SendStrCmd(fd,cmd);
-	while((read_size = read(fd, buf, 1024)) > 0) {
+	buf_len = sizeof(buf);
+	ReadAtResponse(fd, buf, &buf_len);
+	sscanf(buf,"\r\n+CPBR: (%d-%d),%*d,%*d", &begin, &end);
+
+	sim_phonebook *result = malloc(sizeof(*result));
+	result->count = 0;
+	result->numbers = malloc(sizeof(char *) * (end - begin + 1));
+	result->names = malloc(sizeof(char *) * (end - begin + 1));
+
+	bzero(result->numbers, sizeof(char *) * (end - begin + 1));
+	bzero(result->names, sizeof(char *) * (end - begin + 1));
+
+	for(i = begin; i < end; i++) {
+		sprintf(cmd,"at+cpbr=%d\r", i);
+		SendStrCmd(fd,cmd);
+
+		buf_len = sizeof(buf);
+		ReadAtResponse(fd, buf, &buf_len);
+		buf[buf_len] = '\0';
+		ParsePhoneBookLine(buf, buf_len, result);
 	}
+
 	CloseConn(fd);
 
-	return NULL;
+	return result;
+}
+
+int ParsePhoneBookLine(char *buf, int buf_len, sim_phonebook *spb)
+{
+	char *buf_end = buf + buf_len;
+	char *begin, *end;
+	char *phone, *name;
+
+	int ret = 0;
+
+	begin = memchr(buf, '"', buf_len);
+	if (NULL == begin) {
+		return -1;
+	}
+
+	end = memchr(begin + 1, '"', buf_end - begin - 1);
+	if (NULL == end) {
+		return -1;
+	}
+
+	*end = '\0';
+	spb->numbers[spb->count] = strdup(begin + 1);
+
+	begin = memchr(end + 1, '"', buf_end - end - 1);
+	if (NULL == begin) {
+		return -1;
+	}
+	end = memchr(begin + 1, '"', buf_end - begin - 1);
+	if (NULL == end) {
+		return -1;
+	}
+		
+	*end = '\0';
+	spb->names[spb->count] = strdup(begin + 1);
+
+	spb->count++;
+
+	return ret;
 }
