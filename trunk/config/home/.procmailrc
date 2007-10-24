@@ -1,0 +1,74 @@
+MAILDIR=$HOME/Mail
+
+
+:0
+* ^TO_devel-perl@yahoo-inc.com
+yahoolist/
+
+:0
+* ^TO_devel-tech@yahoo-inc.com
+yahoolist/
+
+:0
+* ^TO_devel-random@yahoo-inc.com
+yahoolist/
+
+:0
+* ^TO_devel-announce@yahoo-inc.com
+yahoolist/
+
+:0
+* ^TO_devel-linux@yahoo-inc.com
+yahoolist/
+
+:0
+* ^TO_webservices-devel@yahoo-inc.com
+yahoolist/
+
+:0
+* ^TO_agile-people@yahoo-inc.com
+yahoolist/agile-people/
+
+:0
+* ^From:.*bugs@yahoo-inc\.com
+bugzilla/
+
+:0
+* ^From:.*nobody@3721\.com
+bsslosmail/
+
+:0
+* ^From:.*Agnet@3721\.com
+bsslosmail/
+
+:0
+* ^From:.*BSSAlert@yahoo-inc\.com
+alert/
+
+:0
+* ^From:.*monitor@yahoo-inc\.com
+alert/
+
+:0
+* ^From:.*monitor@3721\.com
+alert/
+
+:0
+* ^TO_cn-bbs-devel@yahoo-inc.com
+cn-bbs-devel/
+
+:0
+* (neteagle@263\.net|neteagle_9@21cn\.com)
+{
+	:0HB:
+	* ? bogofilter
+	personal/spam/
+
+	:0
+	*
+	personal/incoming/
+}
+
+:0
+*
+incoming/
