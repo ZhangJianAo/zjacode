@@ -1,0 +1,41 @@
+set folder ="~/Mail"
+set mbox="~/Mail/incoming"
+set mbox_type="Maildir"
+
+charset-hook !utf-8 GBK
+set charset="GBK"
+
+alternative_order text/plain text/html
+auto_view text/html
+set mime_forward=yes
+set markers=no
+set smart_wrap=no
+set pager_stop=yes
+set pager_index_lines=10
+
+macro pager S "s=spam\ny" "file as Spam"
+macro index S "s=spam\ny" "file as Spam"
+set noconfirmappend
+
+set envelope_from=yes
+#set sendmail="/usr/local/bin/esmtp -v -X /tmp/esmtp.log"
+set sendmail="/usr/local/bin/msmtp"
+set record="~/Mail/sent"
+
+set ascii_chars=yes
+set sort=threads
+set sort_aux=date
+
+subscribe devel-perl@yahoo-inc.com devel-tech@yahoo-inc.com devel-random@yahoo-inc.com devel-announce@yahoo-inc.com devel-linux@yahoo-inc.com webservices-devel@yahoo-inc.com agile-people@yahoo-inc.com bssall@3721.com cn-bbs-devel@yahoo.com
+
+folder-hook . "ignore *; unignore from subject X-mailer date to cc"
+hdr_order from subject date to cc
+set folder_format="%2C %t %N $n %8s %d %f"
+
+set from="johnzh@alibaba-inc.com"
+set use_from=yes
+set editor=emacs
+
+set alternates="zja@yahoo-inc.com|zhangjianao@3721.com|zhangjianao@alibaba-inc.com|johnzh@alibaba-inc.com|neteagle@263.net|neteagle_9@21cn.com"
+
+source ~/.mutt/colours

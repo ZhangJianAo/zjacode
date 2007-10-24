@@ -1,0 +1,5 @@
+application/msword; wvHtml --charset=gbk %s - | lynx --dump -stdin; copiousoutput
+
+application/vnd.ms-excel; xlhtml -nh %s | iconv -c -f UTF-8 -t GBK | lynx --dump -stdin; copiousoutput
+
+text/html; cat %s | /home/zja/bin/html_iconv.pl | lynx --dump -force_html -stdin; nametemplate=%s; copiousoutput
