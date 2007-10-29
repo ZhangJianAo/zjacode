@@ -7,6 +7,7 @@ typedef struct sim_phonebook {
 	char **names;
 } sim_phonebook;
 
-sim_phonebook * ReadAllPB();
+sim_phonebook * sim_read_pb();
+char * sim_get_lasterror();
 
 #endif

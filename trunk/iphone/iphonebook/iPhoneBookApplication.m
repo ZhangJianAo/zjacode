@@ -1,5 +1,6 @@
 #import "iPhoneBookApplication.h"
 #import "sim_phonebook.h"
+#import <UIKit/UIProgressHUD.h>
 
 @implementation iPhoneBookApplication
 
@@ -86,25 +87,32 @@ char GetHexChar(char *p)
 
 	rect.origin.x = rect.origin.y = 0;
 
-	UIView *mainView = [[UIView alloc] initWithFrame: rect];
+	_mainView = [[UIView alloc] initWithFrame: rect];
 
 	UINavigationBar *navBar = [[UINavigationBar alloc] init];
 	[navBar setFrame:CGRectMake(rect.origin.x, rect.origin.y, rect.size.width, NAV_BAR_HEIGHT)];
 	[navBar showLeftButton:@"Call" withStyle:0 rightButton:@"Import All" withStyle:0];
-	[mainView addSubview: navBar];
+	[navBar setDelegate: self];
+	[_mainView addSubview: navBar];
 
 	rect.origin.y = rect.origin.y + NAV_BAR_HEIGHT;
 	rect.size.height = rect.size.height - NAV_BAR_HEIGHT;
 
-	UITable *pbTable = [[UITable alloc] initWithFrame: rect];
-	UITableColumn *pbColumn = [[UITableColumn alloc] initWithTitle: @"PhoneBook" identifier: @"iPhoneBook" width: rect.size.width];
-	[pbTable addTableColumn: pbColumn];
-	[pbTable setDataSource: self];
-	[pbTable setDelegate: self];
-	[pbTable setResusesTableCells: FALSE];
-	[mainView addSubview: pbTable];
+	errorInfoSheet = [[UIAlertSheet alloc] initWithFrame: CGRectMake(0, 240, 320, 240)];
+	[errorInfoSheet setTitle:@"Error"];
+	[errorInfoSheet setBodyText:@"Hello World!"];
+	[errorInfoSheet addButtonWithTitle:@"OK" ];
+	[errorInfoSheet setDelegate: self ];
 
-	[_window setContentView: mainView];
+	_pbTable = [[UITable alloc] initWithFrame: rect];
+	UITableColumn *pbColumn = [[UITableColumn alloc] initWithTitle: @"PhoneBook" identifier: @"iPhoneBook" width: rect.size.width];
+	[_pbTable addTableColumn: pbColumn];
+	[_pbTable setDataSource: self];
+	[_pbTable setDelegate: self];
+	[_pbTable setResusesTableCells: FALSE];
+	[_mainView addSubview: _pbTable];
+
+	[_window setContentView: _mainView];
 
 	_pbCells = [[NSMutableArray alloc] init];
 
@@ -114,17 +122,45 @@ char GetHexChar(char *p)
 	[_pbCells addObject: cell];
 	[cell release];
 
+	UIProgressHUD *hud = [[UIProgressHUD alloc] initWithWindow: _window];
+	[hud show: true];
+
 	//[self AddRow: [self Ucs2String: "707573AF4E3D0041004300430054"]];
 
-	sim_phonebook *spb = ReadAllPB();
+	sim_phonebook *spb = sim_read_pb();
 
-	[self AddRow: [NSString stringWithFormat: @"count: %d", spb->count]];
+	if (NULL != spb) {
+		[self AddRow: [NSString stringWithFormat: @"count: %d", spb->count]];
 
-	int i = 0;
-	for(i = 0; i < spb->count; i++) {
-		[self AddRow: [NSString stringWithFormat: @"%s: %@", spb->numbers[i], [self Ucs2String: spb->names[i]]]];
+		int i = 0;
+		for(i = 0; i < spb->count; i++) {
+			[self AddRow: [NSString stringWithFormat: @"%s: %@", spb->numbers[i], [self Ucs2String: spb->names[i]]]];
+		}
+	} else {
+		[errorInfoSheet setBodyText: [NSString stringWithUTF8String: sim_get_lasterror()]];
+		[errorInfoSheet presentSheetInView: _mainView ];
+		[self AddRow: [NSString stringWithUTF8String: sim_get_lasterror()]];
 	}
-	[pbTable reloadData];
+
+	[_pbTable reloadData];
+
+}
+
+- (void)alertSheet:(UIAlertSheet *)sheet buttonClicked:(int)button;
+{
+	[sheet dismiss];
+}
+
+- (void)navigationBar:(UINavigationBar*)navbar buttonClicked:(int)button 
+{
+	if (1 == button) {
+		[errorInfoSheet setBodyText: @"Call This Phone!"];
+		[errorInfoSheet presentSheetInView: _mainView ];
+	}
+}
+
+- (void)tableRowSelected:(NSNotification*)notification
+{
 }
 
 @end
