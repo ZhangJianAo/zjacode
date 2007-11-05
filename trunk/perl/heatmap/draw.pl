@@ -47,7 +47,20 @@ $mask->Negate();
 
 $colorMap = Image::Magick->New;
 $colorMap->Read('colors.png');
-print Dumper($colorMap->GetPixels(geometry => "+0+0", width => 1, height => 10));
+@cmap = $colorMap->GetPixels(geometry => "+0+0", width => 1, height => 500);
+
+for(my $x = 0; $x < $w; $x++) {
+    for(my $y = 0; $y < $h; $y++) {
+	my $pixel = $mask->GetPixel(geometry=>"+$x+$y");
+	my $index = $pixel * 500;
+	$index = 500 if $index > 500;
+	$index *= 3;
+
+	$color = "rgb(".$cmap[$index].",".$cmap[$index+1].",".$cmap[$index+2].")";
+	print $color, "\n";
+	$mask->Set("pixel[$x, $y]"=>$color);
+    }
+}
 
 $mask->Write(filename => 'mask.png');
 $bol->Write('bol.png');
