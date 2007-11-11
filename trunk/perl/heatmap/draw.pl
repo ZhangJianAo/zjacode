@@ -47,18 +47,24 @@ $mask->Negate();
 
 $colorMap = Image::Magick->New;
 $colorMap->Read('colors.png');
-@cmap = $colorMap->GetPixels(geometry => "+0+0", width => 1, height => 500);
+$width = $colorMap->Get('height');
 
 for(my $x = 0; $x < $w; $x++) {
     for(my $y = 0; $y < $h; $y++) {
-	my $pixel = $mask->GetPixel(geometry=>"+$x+$y");
-	my $index = $pixel * 500;
-	$index = 500 if $index > 500;
-	$index *= 3;
+	my $index = $mask->GetPixel(geometry=>"+$x+$y", channel=>Gray);
 
-	$color = "rgb(".$cmap[$index].",".$cmap[$index+1].",".$cmap[$index+2].")";
-	print $color, "\n";
-	$mask->Set("pixel[$x, $y]"=>$color);
+	#print Dumper($index); exit 0;
+	$index = 0.5;
+	$index = int($index * $width);
+	$index = $width-1 if $index >= $width;
+	
+	print $index, " ", $width, "\n";
+
+	my @color = $colorMap->GetPixel(x=>0, y=>$index, channel=>All);
+
+
+print Dumper(@color); exit 0;
+	$mask->SetPixel(channel=>All, x=>$x, y=>$y, color=>\@color);
     }
 }
 
