@@ -1,7 +1,10 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
+#include <unistd.h>
 #include <vector>
+#include <map>
+#include <string>
 
 #define ACT_BUILD 1
 #define ACT_QUERY 2
@@ -19,6 +22,8 @@ typedef struct {
 typedef struct {
 	TermIndex idx[65536];
 } Index;
+
+static std::map<int, std::string> table;
 
 /* segment string for each char, suppose the input is GBK encoding */
 int segment(unsigned char *input, int len, TermInfo **info)
@@ -119,6 +124,7 @@ buildIndex(FILE *pf)
 		id = buf;
 		doc = sep + 1;
 
+		table[atoi(id)] = doc;
 		indexRow(ret, atoi(id), doc);
 	}
 
@@ -178,6 +184,9 @@ join(TermIndex **idxList, int len, std::vector<int> *ret)
 	int curDoc = 0;
 	int finded = 0;
 
+	//We can't support null list right now.
+	assert(len > 0);
+
 	for(i = 0; i < len; i++) {
 		if ((NULL == idxList[i])
 		    || (NULL == idxList[i]->docList)
@@ -227,6 +236,10 @@ search(Index *idx, char *query)
 
 	nterm = segment((unsigned char*)query, strlen(query), &terms);
 	
+	if (nterm <= 0) {
+		return 0;
+	}
+
 	term = terms;
 
 	for(i = 0; i < nterm; i++) {
@@ -246,7 +259,7 @@ search(Index *idx, char *query)
 	join(idxList, i, &docList);
 
 	for(i = 0; i < docList.size(); i++) {
-		printf("%d\n", docList[i]);
+		printf("%s\n", table[docList[i]].c_str());
 	}
 
 	return 0;
@@ -261,6 +274,8 @@ main(int argc, char **argv)
 	char line[256];
 	int len = 0;
 	Index *idx = NULL;
+	char inputFile[1024];
+	char *inFileName = "input.txt";
 
 	/* check if first arg is action */
 	if ((argc > 1) && ('-' != argv[1][0])) {
@@ -271,7 +286,20 @@ main(int argc, char **argv)
 		i++;
 	}
 
-	input = fopen("/Users/zja/zjacode/seabird/input.txt", "r");
+	for(; i < argc; i++) {
+		if (0 == strcmp(argv[i], "-i")) {
+			if (i + 1 < argc) {
+				inFileName = argv[i+1];
+				i++;
+			}
+		}
+	}
+
+	getcwd(inputFile, sizeof(inputFile));
+	strcat(inputFile, "/");
+	strcat(inputFile, inFileName);
+
+	input = fopen(inputFile, "r");
 	idx = buildIndex(input);
 	fclose(input);
 
