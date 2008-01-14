@@ -1,20 +1,19 @@
 (add-to-list 'load-path "/usr/local/share/emacs/site-lisp")
 (add-to-list 'load-path "~/emacs/site-lisp")
-(tool-bar-mode nil)
 
 (setq fill-column 80)
-;;设置中文环境
-(set-language-environment "Chinese-GB")
-(set-terminal-coding-system 'chinese-iso-8bit)
-(set-keyboard-coding-system 'chinese-iso-8bit)
-(set-clipboard-coding-system 'chinese-iso-8bit)
+
+;(set-language-environment "Chinese-GB")
+(set-terminal-coding-system 'utf-8)
+(set-keyboard-coding-system 'utf-8)
+(set-clipboard-coding-system 'utf-8)
 ;(set-w32-system-coding-system 'chinese-iso-8bit)
-(set-buffer-file-coding-system 'euc-cn)
+(set-buffer-file-coding-system 'utf-8)
 ;(set-buffer-process-coding-system 'chinese-iso-8bit)
 ;(set-display-coding-system 'euc-china)
-(set-selection-coding-system 'euc-cn)
+(set-selection-coding-system 'utf-8)
 
-;;部分方便的设置
+
 (setq line-spacing 10)
 (setq next-line-add-newlines nil)
 (setq column-number-mode t)
@@ -24,7 +23,7 @@
 (setq frame-title-format "emacs %b @ %f")
 (setq x-select-enable-clipboard t)
 
-;;部分键绑定
+
 (global-set-key (kbd "C-g") 'goto-line)
 (global-set-key [end] 'end-of-line)
 (global-set-key [home] 'beginning-of-line)
@@ -35,7 +34,7 @@
 (global-set-key (kbd "M-.") 'cscope-find-this-symbol)
 (global-set-key (kbd "M-\r") 'complete-symbol)
 
-;;全局语法加亮
+
 (global-font-lock-mode)
 (iswitchb-mode)
 (delete-selection-mode)
@@ -49,13 +48,13 @@
 
 (add-hook 'iswitchb-define-mode-map-hook 'iswitchb-local-keys)
 
-;;加载其他附加模块
+
 ;(require 'ido)
 ;(ido-mode t)
 (if (require 'color-theme "color-theme" t)
     (color-theme-dark-laptop))
 
-;;方便编辑Scheme程序
+
 ;(require 'xscheme)
 ;(require 'quack)
 
@@ -76,11 +75,11 @@
 ;(setq auto-mode-alist
 ;      (cons '("\\.\\(pas\\|dpr\\|dpk\\)$" . delphi-mode) auto-mode-alist))
 
-;;设置个人的信息
+
 (setq user-full-name "Net Eagle")
 (setq user-mail-address "NetEagle@263.net")
 
-;;用%来匹配语法中的括号，可以方便的在括号中移动
+
 (global-set-key "%" 'match-paren)
 
 (defun match-paren (arg)
@@ -90,7 +89,7 @@
 	((looking-at "\\s\)") (forward-char 1) (backward-list 1))
 	(t (self-insert-command (or arg 1)))))
 
-;;模拟Windows的设置，用Ctrl+Tab来切换buffer
+
 (global-set-key [C-tab] 'switch-buffer)
 
 (defun switch-buffer (arg)
@@ -98,20 +97,20 @@
   (interactive "p")
   (switch-to-buffer (other-buffer)))
 
-;;用nxml来编辑xml文件
+
 ;(load "nxml/rng-auto.el")
 ;(setq auto-mode-alist
 ;        (cons '("\\.\\(xml\\|xsl\\|rng\\|xhtml\\)\\'" . nxml-mode)
 ;	      auto-mode-alist)) 
 
-;;我常用的文档类型
+
 (add-to-list 'auto-mode-alist '("\\.config\\'" . nxml-mode))
 (add-to-list 'auto-mode-alist '("\\.Build\\'" . nxml-mode))
 ;(add-to-list 'auto-mode-alist '("\\.cs\\'" . csharp-mode))
 
-;;让所有的文件都备份到指定的目录
+
 (setq backup-directory-alist '(("." . "~/.emacs.d/backups")))
-;;备份时保留几个版本
+
 (setq version-control t)
 (setq kept-new-versions 3)
 (setq delete-old-versions t)
