@@ -295,9 +295,13 @@ main(int argc, char **argv)
 		}
 	}
 
-	getcwd(inputFile, sizeof(inputFile));
-	strcat(inputFile, "/");
-	strcat(inputFile, inFileName);
+	if ('/' != inFileName[0]) {
+		getcwd(inputFile, sizeof(inputFile));
+		strcat(inputFile, "/");
+		strcat(inputFile, inFileName);
+	} else {
+		strncpy(inputFile, inFileName, sizeof(inputFile));
+	}
 
 	input = fopen(inputFile, "r");
 	idx = buildIndex(input);
