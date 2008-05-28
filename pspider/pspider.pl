@@ -20,69 +20,6 @@ sub get_page {
     }
 }
 
-{
-    my $dbh;
-    sub get_dbh {
-	if (! $dbh) {
-	    $dbh = DBI->connect("dbi:SQLite:dbname=pspider.db","","");
-	}
-	return $dbh;
-    }
-}
-
-sub save_page {
-    my ($url, $content, $time) = @_;
-    my $hash = md5_hex($content);
-    my $dbh = get_dbh();
-    $sql = sprintf('UPDATE pages SET hash=%s, last=%d WHERE url = %s', $dbh->quote($hash), $time, $dbh->quote($url));
-
-    $dbh->do($sql) or die $dbh->errstr;
-}
-
-sub add_page {
-    my $url = shift;
-    if (0 >= length($url)) {
-	return;
-    }
-
-    my $dbh = get_dbh();
-    my $sql = sprintf('INSERT OR IGNORE INTO pages(url, last) VALUES(%s, 0)', $dbh->quote($url));
-
-    $dbh->do($sql) or die $dbh->errstr;
-}
-
-sub init_db {
-    my $dbh = get_dbh();
-
-    my $create_sql = 'CREATE TABLE pages(url PRIMARY KEY, hash, last);
-CREATE INDEX idx_hash ON pages(hash);
-CREATE INDEX idx_last ON pages(last);';
-
-    $dbh->do($create_sql) or die $dbh->errstr;
-
-    print "init_db....ok\n";
-}
-
-sub list_pages {
-    my $time = shift;
-    my $dbh = get_dbh();
-    my $sql = sprintf('SELECT * FROM pages WHERE last < %d', $time);
-    my $sth = $dbh->prepare($sql) or die $dbh->errstr;
-    my $rv = $sth->execute or die $sth->errstr;
-    while(my @row = $sth->fetchrow_array) {
-	printf("'%s'\t'%s'\t'%d'\n", $row[0], $row[1], $row[2]);
-    }
-}
-
-sub get_pages {
-    my $time = shift;
-    my $limit = shift;
-    my $sql = sprintf('SELECT * FROM pages WHERE last < %d LIMIT %d', $time, $limit);
-    my $dbh = get_dbh();
-    my $rows = $dbh->selectall_arrayref($sql, {Slice => {}});
-    return @{$rows};
-}
-
 sub extra_links {
     my $page = shift;
     my $base_url = shift;
