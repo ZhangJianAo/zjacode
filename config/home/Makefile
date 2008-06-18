@@ -1,4 +1,4 @@
-HOME_LINK_FILES = .emacs .viper .profile .cvsrc
+HOME_LINK_FILES = .emacs .viper .profile .cvsrc emacs
 MAIL_FILES = .muttrc .mailcap .procmailrc
 X_FILES = .xinitrc
 
